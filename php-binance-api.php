@@ -10,7 +10,7 @@
  * ============================================================
  * A curl HTTP REST wrapper for the binance currency exchange
  */
-namespace Binance;
+namespace BinanceAPI;
 
 // PHP version check
 if (version_compare(phpversion(), '7.0', '<=')) {
@@ -1346,14 +1346,24 @@ class API
             "symbol" => $json->s,
             "side" => $json->S,
             "orderType" => $json->o,
-            "quantity" => $json->q,
-            "price" => $json->p,
+            "orderQuantity" => $json->q,
+            "orderPrice" => $json->p,
+            "stopPrice" => $json->P,
+            "icebergQuantity" => $json->F,
             "executionType" => $json->x,
             "orderStatus" => $json->X,
             "rejectReason" => $json->r,
             "orderId" => $json->i,
+            "lastExecutedQty" => $json->l,
+            "lastExecutedPrice" => $json->L,
+            "cummulativeFilledQty" => $json->z,
+            "cummulativeQuoteQty" => $json->Z,
+            "commission" => $json->n,
+            "commissionAsset" => $json->m,
+            "orderId" => $json->i,
             "clientOrderId" => $json->c,
-            "orderTime" => $json->T,
+            "transactTime" => $json->T,
+            "orderCreationTime" => $json->O,
             "eventTime" => $json->E,
         ];
     }
@@ -2215,10 +2225,20 @@ class API
                 }
                 $json = json_decode($data);
                 $type = $json->e;
-                if ($type === "outboundAccountInfo") {
+                if ($type === "outboundAccountPosition") {
                     $balances = $this->balanceHandler($json->B);
                     $this->info['balanceCallback']($this, $balances);
+
+                } elseif ($type === "balanceUpdate") {
+                    $balances = $this->balanceHandler($json);
+                    $this->info['balanceCallback']($this, $balances);
+
                 } elseif ($type === "executionReport") {
+                    $report = $this->executionHandler($json);
+                    if ($this->info['executionCallback']) {
+                        $this->info['executionCallback']($this, $report);
+                    }
+                } elseif ($type === "listStatus") {
                     $report = $this->executionHandler($json);
                     if ($this->info['executionCallback']) {
                         $this->info['executionCallback']($this, $report);
